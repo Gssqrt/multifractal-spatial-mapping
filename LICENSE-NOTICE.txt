@@ -1,0 +1,5 @@
+LICENSE PENDING AUTHOR DECISION
+
+This is a preparation package for scientific review, not a licensed public release.
+No license is granted unless the rights holders select and add a license.
+The file in legacy/ is a research artifact and may contain third-party snippets; review rights before publication.

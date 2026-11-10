@@ -1,0 +1,8 @@
+cff-version: 1.2.0
+message: "Please cite the software repository and the associated research article when available."
+title: "Multifractal Spatial Mapping: an R workflow for geospatial attribution of FracLac descriptors"
+type: software
+version: "0.1.0-dev"
+authors:
+  - name: "Authors to be confirmed before release"
+license: "NOASSERTION"
