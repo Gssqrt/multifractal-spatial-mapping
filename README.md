@@ -6,7 +6,13 @@ Development snapshot **v0.1.0-dev** — *not yet independently validated against
 
 ## What is this project?
 
-This repository documents and modularizes the scientific workflow used to spatialize multi­fractal descriptors from segmented satellite imagery of floating *Sargassum* aggregations. Spectra are obtained in **FracLac / ImageJ** (external software), **not** calculated in this repository. The subsequent R workflow assigns section identifiers to spectral records, extracts per-partition descriptors, links them with georeferenced section centroids, fits semivariogram models and generates ordinary-kriging surfaces and variance rasters. Optional functionality produces morphological matrices and clusters.
+## Scientific Motivation and Perspectives
+
+This repository originates from the methodological framework developed in *Application of multifractal analysis to segmented orbital products of Sargassum spp.*, which investigated the spatial organization and morphological complexity of pelagic *Sargassum* aggregations using multifractal descriptors derived from segmented satellite imagery.
+
+By linking partition-level multifractal descriptors to geographic coordinates and applying geostatistical interpolation, the framework enabled the construction of spatial morphological matrices. Their subsequent multivariate integration allowed the identification of coherent aggregation patterns and the calculation of PCA-based magnitudes summarizing their combined structural expression, revealing meaningful correspondence with oceanic mesoscale features.
+
+Building on these findings, **Multifractal Spatial Mapping** is evolving toward a unified, reproducible workflow that integrates the entire processing chain, from image partitioning and spatial attribution to morphological matrices, multivariate classification, and magnitude estimation. This development aims to make the methodology more accessible, scalable, and transferable to other remotely sensed spatial phenomena.
 
 **Pipeline:** georeferenced segmentation → image partitioning + centroid manifest → external FracLac → cleaned numeric spectral export → partition indexing → descriptor extraction → spatial join → semivariogram → ordinary kriging → maps and morphological matrices.
 
