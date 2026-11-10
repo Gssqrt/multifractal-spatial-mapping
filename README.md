@@ -67,12 +67,43 @@ For additional information, see [`examples/case_20210516/README.md`](examples/ca
 - `R/07_morphological_matrices.R` — extract co-registered raster values with coordinates.
 - `R/08_cluster_analysis.R` — optional descriptive Ward.D2 grouping.
 
-## Reproduction vs enhancements
+## Scientific background and references
 
-The original combined script is preserved as `legacy/Metotologia_tese_original.R`. Some safeguards and defaults have changed; see [`docs/CHANGELOG_FROM_ORIGINAL.md`](docs/CHANGELOG_FROM_ORIGINAL.md). In particular, the article's script selected semivariograms with `SSErr`, whereas the modular code defaults to `RMSE_CV`. Set `criterion = 'SSErr'` for historical-method matching.
+This repository provides an R-based workflow for the spatial attribution, geostatistical interpolation, and mapping of multifractal descriptors extracted from segmented satellite imagery.
 
-The code has not been used to regenerate the manuscript's numerical results in this environment. Report source attribution, FracLac/ImageJ version, data-cleaning decisions, masking, variogram-selection settings, and interpolation support in the paper. The final source repository/license and author list should be approved before an archival release.
+The workflow is based on established methods in multifractal analysis, singularity-spectrum characterization, spatial mapping, and geostatistics. Multifractal parameters are obtained from FracLac/ImageJ outputs, while the subsequent spatial processing is implemented in R.
 
+### References
+
+Allain, C., & Cloitre, M. (1991). Characterizing the lacunarity of random and deterministic fractal sets. *Physical Review A, 44*, 3552.
+
+Cheng, Q. (1999). Multifractality and spatial statistics. *Computers & Geosciences, 25*, 949–961.
+
+Cheng, Q., Agterberg, F., & Ballantyne, S. (1994). The separation of geochemical anomalies from background by fractal methods. *Journal of Geochemical Exploration, 51*, 109–130. https://doi.org/10.1016/0375-6742(94)90013-2
+
+Chhabra, A., & Jensen, R. V. (1989). Direct determination of the f(α) singularity spectrum. *Physical Review Letters, 62*, 1327.
+
+Karperien, A. (2012). *FracLac for ImageJ*. https://imagej.net/ij/plugins/fraclac/FLHelp/Introduction.htm
+
+Laval, M., Belmouhcine, A., Courtrai, L., Descloitres, J., Salazar-Garibay, A., Schamberger, L., Minghelli, A., Thibaut, T., Dorville, R., & Mazoyer, C. (2023). Detection of Sargassum from Sentinel satellite sensors using deep learning approach. *Remote Sensing, 15*, 1104. https://doi.org/10.3390/rs15041104
+
+Martín-Sotoca, J. J., Saa-Requejo, A., Grau, J. B., & Tarquis, A. M. (2017). New segmentation method based on fractal properties using singularity maps. *Geoderma, 287*, 40–53.
+
+Martín-Sotoca, J. J., Saa-Requejo, A., Borondo, J., & Tarquis, A. M. (2018). Singularity maps applied to a vegetation index. *Biosystems Engineering, 168*, 42–53.
+
+Matheron, G. (1963). Principles of geostatistics. *Economic Geology, 58*, 1246–1266. https://doi.org/10.2113/gsecongeo.58.8.1246
+
+R Core Team. (2024). *R: A language and environment for statistical computing*. R Foundation for Statistical Computing. https://www.R-project.org/
+
+Schneider, C. A., Rasband, W. S., & Eliceiri, K. W. (2012). NIH Image to ImageJ: 25 years of image analysis. https://doi.org/10.1038/nmeth.2089
+
+Yamamoto, J. K., & Landim, P. M. B. (2005). *Geoestatística: Conceitos e aplicações*. Editora Unesp.
+
+### Related research article
+
+Gustavo-Silva, F., et al. *Application of multifractal analysis to segmented orbital products of Sargassum spp.* Manuscript.
+
+The repository accompanies the methodological framework developed in the associated research article. The final bibliographic reference and DOI will be added following publication.
 ## Citation and licensing
 
 The pipeline is distinct from FracLac; the FracLac Java implementation is **not included**. Cite the original FracLac authors/plugin and the paper describing your work. `CITATION.cff` is intentionally a placeholder; authors, DOI, year and license still need approval. No open-source license is granted by this development snapshot.
