@@ -1,8 +1,48 @@
+
 cff-version: 1.2.0
-message: "Please cite the software repository and the associated research article when available."
+message: "Please cite this software repository and the associated research article when available."
+
 title: "Multifractal Spatial Mapping: an R workflow for geospatial attribution of FracLac descriptors"
+
 type: software
 version: "0.1.0-dev"
+
 authors:
-  - name: "Authors to be confirmed before release"
-license: "NOASSERTION"
+  - family-names: "Gustavo-Silva"
+    given-names: "Francisco"
+
+  - family-names: "Costa da Silva"
+    given-names: "Alex"
+
+  - family-names: "Chevalier"
+    given-names: "Cristele"
+
+  - family-names: "Minghelli"
+    given-names: "Audrey"
+
+  - family-names: "Amein"
+    given-names: "Yamina"
+
+  - family-names: "Laval"
+    given-names: "Marine"
+
+  - family-names: "Courtrai"
+    given-names: "Luc"
+
+  - family-names: "Descloitres"
+    given-names: "Jacques"
+
+  - family-names: "Salazar"
+    given-names: "Adan"
+
+  - family-names: "Espinola Ferreira"
+    given-names: "Tiago Alessandro"
+
+  - family-names: "Rodrigues de Castro Romaguera"
+    given-names: "Antonio"
+
+  - family-names: "Vantrepotte"
+    given-names: "Vincent"
+
+  - family-names: "Duarte-Neto"
+    given-names: "Paulo"
