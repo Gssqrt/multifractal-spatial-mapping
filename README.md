@@ -87,10 +87,6 @@ Karperien, A. (2012). *FracLac for ImageJ*. https://imagej.net/ij/plugins/fracla
 
 Laval, M., Belmouhcine, A., Courtrai, L., Descloitres, J., Salazar-Garibay, A., Schamberger, L., Minghelli, A., Thibaut, T., Dorville, R., & Mazoyer, C. (2023). Detection of Sargassum from Sentinel satellite sensors using deep learning approach. *Remote Sensing, 15*, 1104. https://doi.org/10.3390/rs15041104
 
-Martín-Sotoca, J. J., Saa-Requejo, A., Grau, J. B., & Tarquis, A. M. (2017). New segmentation method based on fractal properties using singularity maps. *Geoderma, 287*, 40–53.
-
-Martín-Sotoca, J. J., Saa-Requejo, A., Borondo, J., & Tarquis, A. M. (2018). Singularity maps applied to a vegetation index. *Biosystems Engineering, 168*, 42–53.
-
 Matheron, G. (1963). Principles of geostatistics. *Economic Geology, 58*, 1246–1266. https://doi.org/10.2113/gsecongeo.58.8.1246
 
 R Core Team. (2024). *R: A language and environment for statistical computing*. R Foundation for Statistical Computing. https://www.R-project.org/
