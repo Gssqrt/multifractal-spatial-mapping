@@ -35,29 +35,26 @@ Required files:
 
 **Warning:** indexing by repeated numbers cannot independently prove the *order* of FracLac's export. Preserve the image-to-result log and manually verify selected partitions. The 219-row convention cannot be applied to an uncleaned 220-row export.
 
-## Quick start with synthetic data
+## Example: Spatial attribution of multifractal descriptors
 
-Generate an example to understand the input contract (5 q records per section; no satellite/FracLac observations):
+A real-world example derived from segmented satellite imagery of *Sargassum* aggregations is provided in `examples/case_20210516/`.
 
-```bash
-Rscript examples/make_example.R
-Rscript scripts/run_workflow.R \
-  examples/input/cleaned_spectra.csv \
-  examples/input/partition_order.csv \
-  examples/input/centroids.csv \
-  examples/input/boundary.gpkg \
-  examples/output 5
-```
+The dataset demonstrates the organization, extraction, and spatial attribution of multifractal descriptors across image partitions.
 
-**Example images are synthetic**; the example verifies file interfaces and does not validate the scientific performance of kriging on real data. The kriging function requires at least 10 spatial points with nonconstant descriptor values; some toy datasets might yield no valid semivariogram fit, which must be diagnosed rather than hidden.
+The example includes:
 
-For the real 219-line cleaned spectrum, omit final `5`, or explicitly pass `219`.
+- **centroids.csv:** Geographic information and spatial identifiers for 289 image partitions (17 × 17 grid).
+- **indexed_spectra.csv:** Multifractal spectral records associated with individual partitions.
+- **multifractal_descriptors.csv:** Extracted multifractal descriptors, including Δα, Δf(α), α₀, D₀, D₁, D₂, and r.
+- **spatial_descriptors.csv:** Multifractal descriptors associated with their corresponding spatial coordinates.
 
-Execute base-R tests:
+Of the 289 partitions, 242 contain numerical spectral results, with 210 records per valid partition.
 
-```bash
-Rscript tests/run_tests.R
-```
+The example illustrates the spatial attribution workflow and provides reference data for checking partition identifiers, descriptor extraction, and spatial joins.
+
+**Note:** This dataset demonstrates the spatial integration stage. It should not be interpreted as a direct export from FracLac/ImageJ or as an independent validation of the geostatistical interpolation.
+
+For additional information, see [`examples/case_20210516/README.md`](examples/case_20210516/README.md).
 
 ## R modules
 
