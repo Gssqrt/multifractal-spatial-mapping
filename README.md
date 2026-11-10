@@ -14,7 +14,15 @@ By linking partition-level multifractal descriptors to geographic coordinates an
 
 Building on these findings, **Multifractal Spatial Mapping** is evolving toward a unified, reproducible workflow that integrates the entire processing chain, from image partitioning and spatial attribution to morphological matrices, multivariate classification, and magnitude estimation. This development aims to make the methodology more accessible, scalable, and transferable to other remotely sensed spatial phenomena.
 
-**Pipeline:** georeferenced segmentation → image partitioning + centroid manifest → external FracLac → cleaned numeric spectral export → partition indexing → descriptor extraction → spatial join → semivariogram → ordinary kriging → maps and morphological matrices.
+
+## Pipeline
+
+The workflow integrates georeferenced image partitioning, FracLac-derived multifractal descriptors, spatial attribution, and geostatistical interpolation to generate spatial morphological matrices.
+
+![Geospatial Morphological Analysis Workflow](docs/tech-roadmap-svg.png)
+
+*Figure 1. Overview of the methodological workflow, from georeferenced satellite imagery and image partitioning to the construction of spatial morphological matrices. Multifractal analysis is performed externally using FracLac/ImageJ.*
+
 
 ## Requirements
 
