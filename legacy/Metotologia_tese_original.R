@@ -8,23 +8,23 @@ library(raster)
 library(viridis)
 library(sf)  
 
-###############################REPROJEÇÃO#######################################
+###############################REPROJECTION#######################################
 ################################################################################
 ################################################################################
 
 ras_nao_ref <- raster("Band1_class.tif")
 ras_ref     <- raster("coord.tif")
 
-# inverter verticalmente (sul↔norte)
+# flip vertically (south ↔ north)
 #ras_nao_ref <- flip(ras_nao_ref, direction = "z")
 
-# copiar moldura e projeção da referência
+# copy the extent and coordinate reference system from the reference raster
 extent(ras_nao_ref) <- extent(ras_ref)
 crs(ras_nao_ref)    <- crs(ras_ref)
 
 writeRaster(ras_nao_ref, "band1_class_geo.tif", overwrite = TRUE)
 
-########################RECORTE E EXTRAÇÂO DE COORDENADAS#######################
+########################IMAGE PARTITIONING AND COORDINATE EXTRACTION#######################
 ################################################################################
 ################################################################################
 
@@ -93,20 +93,20 @@ particionar_por_indice_com_centroides <- function(infile, out_dir,
       suf <- sprintf("%02d", idx)
       outfile <- file.path(out_dir, paste0(base_name, "_", suf, ".tif"))
       
-      # ---- BINARIZAÇÃO 8-BIT (0 / 255) ----
-      # NA permanece NA; !=0 vira 255; ==0 vira 0
+      # ---- 8-BIT BINARIZATION (0 / 255) ----
+      # NA remains NA; nonzero values become 255; zeros remain 0
       if (binarizar_8bit) {
         tile <- ifel(is.na(tile), NA, ifel(tile != 0, 255, 0))
       }
       
-      # ---- (opcional) NÃO SALVAR tiles all-zero (mas registrar no CSV) ----
+      # ---- (optional) SKIP all-zero tiles (but keep their records in the CSV) ----
       salvar <- TRUE
       motivo <- NA_character_
       
       if (skip_all_zero) {
         v <- values(tile, mat = FALSE)
         v2 <- v[!is.na(v)]
-        if (length(v2) == 255) { ## para as de sentinel-3 com sulfixo _geo, o 255 representa os valores ausentes e 0 os valores com informação
+        if (length(v2) == 255) { ## for Sentinel-3 images with the _geo suffix, 255 represents missing values and 0 represents valid information
           salvar <- FALSE
           motivo <- "all_NA"
         } else if (!any(v2 != 255)) {
@@ -145,9 +145,9 @@ particionar_por_indice_com_centroides <- function(infile, out_dir,
   df <- do.call(rbind, regs)
   
   # =========================================================
-  # ALTERAÇÃO ADICIONADA:
-  # Conta quantas partições foram salvas, ou seja,
-  # quantas partições possuem informação de interesse.
+  # ADDED MODIFICATION:
+  # Count how many partitions were saved, that is,
+  # how many partitions contain information of interest.
   # =========================================================
   n_info <- sum(df$salvo, na.rm = TRUE)
   cat(n_info, "partições têm informação\n")
@@ -163,7 +163,7 @@ particionar_por_indice_com_centroides <- function(infile, out_dir,
 }
 
 
-# Exemplo de uso:
+# Usage example:
 infile  <- "20210530_geo.tif"
 out_dir <- "C:/Users/Gssqrt/OneDrive/Área de Trabalho/DIRETOR/Doutorado/Trabalhos/Artigo dissertação/paper/review/new_base/imagens/seccoes/17/partition"
 
@@ -175,187 +175,41 @@ df_centroides <- particionar_por_indice_com_centroides(
 head(df_centroides)
 View(df_centroides)
 
-
-#################RECORTE E EXTRAÇÂO DE COORDENADAS CONTINUO#####################
+######################## REPEAT SPREADSHEET ROWS ###############################
 ################################################################################
 ################################################################################
 
-library(terra)
-
-particionar_imagem_original <- function(infile, out_dir,
-                                        nx = 17, ny = 17,
-                                        overwrite = TRUE,
-                                        drop_border = TRUE,
-                                        csv_path = NULL,
-                                        imagej_baseline = TRUE) {
-  
-  r <- rast(infile)
-  
-  if (!dir.exists(out_dir)) {
-    dir.create(out_dir, recursive = TRUE)
-  }
-  
-  base_name <- tools::file_path_sans_ext(basename(infile))
-  
-  nr <- nrow(r)
-  nc <- ncol(r)
-  resx <- res(r)[1]
-  resy <- res(r)[2]
-  
-  tile_h <- floor(nr / ny)
-  tile_w <- floor(nc / nx)
-  
-  if (drop_border) {
-    use_nr <- tile_h * ny
-    use_nc <- tile_w * nx
-    
-    x_left  <- xFromCol(r, 1)      - resx / 2
-    y_top   <- yFromRow(r, 1)      + resy / 2
-    x_right <- xFromCol(r, use_nc) + resx / 2
-    y_bot   <- yFromRow(r, use_nr) - resy / 2
-    
-    r <- crop(r, ext(x_left, x_right, y_bot, y_top))
-    
-    nr <- nrow(r)
-    nc <- ncol(r)
-  }
-  
-  gdal_opts <- if (imagej_baseline) {
-    c(
-      "PROFILE=BASELINE",
-      "COMPRESS=LZW",
-      "TILED=NO",
-      "TFW=YES",
-      "BIGTIFF=IF_NEEDED",
-      "INTERLEAVE=BAND"
-    )
-  } else {
-    c(
-      "COMPRESS=LZW",
-      "TILED=YES",
-      "BIGTIFF=IF_NEEDED",
-      "INTERLEAVE=BAND"
-    )
-  }
-  
-  regs <- vector("list", nx * ny)
-  idx <- 1L
-  
-  for (iy in 0:(ny - 1)) {
-    
-    r1 <- iy * tile_h + 1L
-    r2 <- min(r1 + tile_h - 1L, nr)
-    
-    y_max <- yFromRow(r, r1) + resy / 2
-    y_min <- yFromRow(r, r2) - resy / 2
-    cy <- (y_max + y_min) / 2
-    
-    for (ix in 0:(nx - 1)) {
-      
-      c1 <- ix * tile_w + 1L
-      c2 <- min(c1 + tile_w - 1L, nc)
-      
-      x_min <- xFromCol(r, c1) - resx / 2
-      x_max <- xFromCol(r, c2) + resx / 2
-      cx <- (x_min + x_max) / 2
-      
-      etile <- ext(x_min, x_max, y_min, y_max)
-      tile <- crop(r, etile)
-      
-      suf <- sprintf("%02d", idx)
-      outfile <- file.path(out_dir, paste0(base_name, "_", suf, ".tif"))
-      
-      writeRaster(
-        tile,
-        outfile,
-        overwrite = overwrite,
-        filetype = "GTiff",
-        gdal = gdal_opts
-      )
-      
-      regs[[idx]] <- data.frame(
-        partition   = suf,
-        linha_idx  = iy + 1L,
-        coluna_idx = ix + 1L,
-        xmin = x_min,
-        xmax = x_max,
-        ymin = y_min,
-        ymax = y_max,
-        centroid_x = cx,
-        centroid_y = cy,
-        arquivo = outfile,
-        salvo = TRUE,
-        crs = if (!is.na(crs(r))) as.character(crs(r)) else NA_character_
-      )
-      
-      idx <- idx + 1L
-    }
-  }
-  
-  df <- do.call(rbind, regs)
-  
-  if (is.null(csv_path)) {
-    csv_path <- file.path(out_dir, paste0(base_name, "_centroides.csv"))
-  }
-  
-  write.csv2(df, csv_path, row.names = FALSE, fileEncoding = "UTF-8")
-  
-  return(df)
-}
-
-
-infile <- "2023-09-09-00_00_2023-09-09-23_59_Sentinel-2_L2A_B03_(Raw).tiff"
-
-out_dir <- "C:/Users/Gustavo/OneDrive/Área de Trabalho/DIRETOR/Doutorado/Trabalhos/Plumas/Base/São francisco/MF/560"
-
-df_centroides <- particionar_imagem_original(
-  infile = infile,
-  out_dir = out_dir,
-  nx = 17,
-  ny = 17,
-  overwrite = TRUE,
-  drop_border = TRUE,
-  imagej_baseline = TRUE
-)
-
-head(df_centroides)
-View(df_centroides)
-
-######################## REPETIR LINAS PLANILHAS ###############################
-################################################################################
-################################################################################
-
-# Carregar a planilha
+# Load the spreadsheet
 data <- read.csv2("FracLac 2015Sep090313a9330MF DATASET SUMMARY.txt")
 
-# Repetir cada observação 216 vezes consecutivamente
+# Repeat each observation consecutively (the code uses 219 repetitions)
 data_repeated <- data[rep(seq_len(nrow(data)), each = 219), ]
 
-# Salvar o resultado em uma nova planilha
+# Save the result to a new spreadsheet
 write.csv2(data_repeated, "ordem_repetida.csv", row.names = FALSE)
 
-# Verificar as primeiras linhas da nova planilha
+# Inspect the first rows of the new spreadsheet
 head(data_repeated)
 
 
 
-###################COMPOSIÇÃO DAS METRICAS MULTIFRACTAIS########################
+###################MULTIFRACTAL DESCRIPTOR EXTRACTION########################
 ################################################################################
 ################################################################################
 
-# Defina o diretório onde estão as planilhas
+# Set the directory containing the spreadsheets
 diretorio <- getwd() 
 # data <- read.csv2('mf_30.csv')
 # head(data)
-# Lista todos os arquivos .xlsx no diretório
+# List all CSV files in the directory
 arquivos <- list.files(path = diretorio, pattern = "*.csv", full.names = TRUE)
 
-# Função para processar cada arquivo
+# Function to process each file
 processa_planilha <- function(arquivo) {
-  # Leia a planilha
+  # Read the spreadsheet
   sing <- read.csv2(arquivo)
   
-  # Converta as colunas relevantes para numérico, se necessário
+  # Convert the relevant columns to numeric values, if necessary
   sing <- sing |> 
     mutate(
       a = as.numeric(a),
@@ -377,33 +231,32 @@ processa_planilha <- function(arquivo) {
       r = (max(a) - `alpha.0`) / (`alpha.0` - min(a))
     )
   
-  # Retorna o nome da planilha e os resultados
+  # Return the spreadsheet filename and results
   list(nome = basename(arquivo), dados = metrics_image)
 }
 
-# Processar todas as planilhas
+# Process all spreadsheets
 resultados <- lapply(arquivos, processa_planilha)
 
-# Salvar cada resultado em um arquivo separado ou combinar
+# Save each result to a separate file or combine them
 for (resultado in resultados) {
-  # Defina o nome do arquivo de saída
+  # Define the output filename
   nome_arquivo_saida <- paste0("parameters_", resultado$nome)
   
-  # Salvar o arquivo Excel
+  # Save the output CSV file
   write.csv2(resultado$dados, file = file.path(diretorio, nome_arquivo_saida))
 }
 
-###########################ADICIONAR COORDENADAS################################
+###########################ADD SPATIAL COORDINATES################################
 ################################################################################
 ################################################################################
-
 
 
 library(dplyr)
 
 diretorio <- getwd()
 
-# Nomes EXATOS das duas planilhas
+# EXACT filenames of the two spreadsheets
 arquivo1 <- "2023-09-09-00_00_2023-09-09-23_59_Sentinel-2_L2A_B03_(Raw)_centroides.csv"
 arquivo2 <- "parameters_ordem_repetida.csv"
 
@@ -415,7 +268,7 @@ path2 <- file.path(diretorio, arquivo2)
 df1 <- read.csv2(path1, stringsAsFactors = FALSE)
 df2 <- read.csv2(path2, stringsAsFactors = FALSE)
 
-# --- validações para garantir alinhamento ---
+# --- checks to ensure consistent alignment ---
 if (!("partition" %in% names(df1))) stop("df1 não tem a coluna 'partition'.")
 if (!("partition" %in% names(df2))) stop("df2 não tem a coluna 'partition'.")
 
@@ -425,21 +278,21 @@ if (any(duplicated(df2$partition))) stop("df2 tem 'partition' duplicado (isso ba
 df1 <- df1 %>% arrange(partition)
 df2 <- df2 %>% arrange(partition)
 
-# Join por partition + resultado ordenado (alinhado)
+# Join by partition ID and sort the resulting table
 resultado <- full_join(df1, df2, by = "partition") %>% arrange(partition)
 
-# (opcional) avisos se estiver faltando partition em algum lado
+# (optional) warn about partition IDs missing from either table
 faltam_em_2 <- setdiff(df1$partition, df2$partition)
 faltam_em_1 <- setdiff(df2$partition, df1$partition)
 
 if (length(faltam_em_2) > 0) message("Partitions que estão só no arquivo1: ", paste(faltam_em_2, collapse = ", "))
 if (length(faltam_em_1) > 0) message("Partitions que estão só no arquivo2: ", paste(faltam_em_1, collapse = ", "))
 
-# Salvar
+# Save
 saida <- file.path(diretorio, "parametros_coo.csv")
 write.csv2(resultado, saida, row.names = FALSE)
 
-###################COMPOSIÇÃO DAS MATRIZAS MORFOLIGICAS#########################
+###################MORPHOLOGICAL MATRIX CONSTRUCTION#########################
 ################################################################################
 ################################################################################
 
@@ -1124,7 +977,7 @@ write.csv2(
 )
 
 
-#################################EXTRAÇÃO MATRIZ###################################
+#################################MATRIX EXTRACTION###################################
 ###################################################################################
 ###################################################################################
 ###################################################################################
@@ -1135,31 +988,31 @@ rm(list = ls())
 graphics.off()
 gc()
 
-# Selecionar os 4 rasters
+# Select the raster files
 arquivos <- c(
   "parametros_coo_30_alpha_0_ordinary_kriging_WGS84.tif",
   "parametros_coo_30_d_alpha_ordinary_kriging_WGS84.tif",
   "parametros_coo_30_df_alpha_ordinary_kriging_WGS84.tif")
 
-# Ler e empilhar os rasters
+# Read and stack the rasters
 r <- rast(arquivos)
 
-# Opcional: renomear as bandas/colunas
+# Optional: rename the raster bands/columns
 names(r) <- c("alpha_0", "d_alpha", "df_alpha")
 
-# Converter para data frame com coordenadas
+# Convert the raster stack to a data frame with coordinates
 df <- as.data.frame(
   r,
   xy = TRUE,
   na.rm = FALSE
 )
 
-# Renomear coordenadas
+# Rename coordinate columns
 names(df)[1:2] <- c("longitude", "latitude")
 head(df)
 
 
-# Salvar planilha
+# Save the spreadsheet
 write.csv2(
   df,
   "matriz.csv",
@@ -1177,7 +1030,7 @@ library(writexl)
 library(factoextra)
 
 # ------------------------------------------------------------
-# 1. Ler a planilha
+# 1. Read the spreadsheet
 # ------------------------------------------------------------
 
 dados <- read.csv2(
@@ -1186,25 +1039,25 @@ dados <- read.csv2(
   stringsAsFactors = FALSE
 )
 
-# Conferir estrutura
+# Check data structure
 str(dados)
 
 # ------------------------------------------------------------
-# 2. Definir as variáveis usadas no agrupamento
+# 2. Define variables used for clustering
 # ------------------------------------------------------------
 
 variaveis_cluster <- c("alpha_0", "d_alpha", "df_alpha")
 
-# Criar um ID para manter a posição original das linhas
+# Create an ID to preserve the original row order
 dados <- dados %>%
   mutate(id_linha = row_number())
 
 # ------------------------------------------------------------
-# 3. Opção para remover linhas sem informação
+# 3. Optionally remove rows without information
 # ------------------------------------------------------------
-# No seu arquivo existem muitas linhas com alpha_0 = 0, d_alpha = 0 e df_alpha = 0.
-# Se esses zeros forem fundo, ausência de dado ou pixels sem informação, use TRUE.
-# Se quiser agrupar tudo, inclusive zeros, use FALSE.
+# The input contains many rows where alpha_0 = 0, d_alpha = 0, and df_alpha = 0.
+# If those zeros represent background, missing data, or pixels without information, use TRUE.
+# To include every row in clustering, including zero-valued rows, use FALSE.
 
 remover_zeros <- FALSE
 
@@ -1220,23 +1073,23 @@ if (remover_zeros == TRUE) {
 }
 
 # ------------------------------------------------------------
-# 4. Remover linhas com NA apenas para a análise
+# 4. Remove rows containing NA only for the analysis
 # ------------------------------------------------------------
 
 dados_cluster <- dados_cluster %>%
   filter(if_all(all_of(variaveis_cluster), ~ !is.na(.)))
 
 # ------------------------------------------------------------
-# 5. Padronizar as variáveis
+# 5. Standardize the variables
 # ------------------------------------------------------------
-# Isso é importante porque cada variável pode ter escala diferente.
+# This is important because variables may have different scales.
 
 matriz_cluster <- dados_cluster %>%
   dplyr::select(dplyr::all_of(variaveis_cluster)) %>%
   scale()
 
 # ------------------------------------------------------------
-# 6. Calcular distância e agrupamento hierárquico
+# 6. Calculate distances and hierarchical clustering
 # ------------------------------------------------------------
 
 distancia <- dist(matriz_cluster, method = "euclidean")
@@ -1247,9 +1100,9 @@ agrupamento <- hclust(
 )
 
 # ------------------------------------------------------------
-# 7. Visualizar dendrograma
+# 7. Plot the dendrogram
 # ------------------------------------------------------------
-# Definir os grupos sem precisar plotar
+# Assign clusters without plotting
 grupos <- cutree(agrupamento, k = 2)
 
 dados_cluster$grupo_hclust <- paste0("Grupo ", grupos)
@@ -1294,17 +1147,14 @@ rect.hclust(
 
 dev.off()
 
-
-
-
 # ------------------------------------------------------------
-# 11. Visualizar distribuição dos grupos
+# 11. Inspect the distribution of clusters
 # ------------------------------------------------------------
 
 table(dados_cluster$grupo_hclust)
 
 # ------------------------------------------------------------
-# 12. Gráfico simples dos grupos no espaço geográfico
+# 12. Simple plot of clusters in geographic space
 # ------------------------------------------------------------
 
 plot(
@@ -1325,276 +1175,3 @@ legend(
   pch = 16,
   cex = 0.8
 )
-
- 
-############################DESCRITIVA COMAPARAçÃO#################################
-###################################################################################
-###################################################################################
-###################################################################################
-
-
-# ============================================
-# Estatísticas descritivas de TODOS os rasters
-# Salva CSV2 com o nome do arquivo como ID
-# ============================================
-
-suppressPackageStartupMessages({
-  library(terra)
-  library(dplyr)
-  library(readr)
-})
-
-# --------- CONFIGURE AQUI ---------
-dir_rasters <- getwd() 
-saida_csv2  <- file.path(dir_rasters, "estatisticas_comparacao.csv")
-# ---------------------------------
-
-arquivos <- list.files(
-  dir_rasters,
-  pattern = "\\.(tif|tiff|grd)$",
-  full.names = TRUE,
-  ignore.case = TRUE
-)
-
-if (length(arquivos) == 0) stop("Nenhum raster .tif/.tiff/.grd encontrado no diretório.")
-
-stats_raster <- function(r) {
-  v <- values(r, mat = FALSE)
-  v <- v[is.finite(v)]
-  
-  if (length(v) == 0) {
-    return(list(
-      n_valid = 0, mean = NA, median = NA, sd = NA, var = NA,
-      min = NA, max = NA, q05 = NA, q25 = NA, q50 = NA, q75 = NA, q95 = NA
-    ))
-  }
-  
-  qs <- as.numeric(quantile(
-    v, probs = c(0.05, 0.25, 0.50, 0.75, 0.95),
-    na.rm = TRUE, names = FALSE
-  ))
-  
-  list(
-    n_valid = length(v),
-    mean   = mean(v),
-    median = median(v),
-    sd     = sd(v),
-    var    = var(v),
-    min    = min(v),
-    max    = max(v),
-    q05    = qs[1],
-    q25    = qs[2],
-    q50    = qs[3],
-    q75    = qs[4],
-    q95    = qs[5]
-  )
-}
-
-df <- lapply(arquivos, function(f) {
-  r <- tryCatch(terra::rast(f), error = function(e) NULL)
-  if (is.null(r)) return(NULL)
-  
-  # Se tiver várias bandas, calcula para cada banda separadamente
-  out <- lapply(seq_len(nlyr(r)), function(i) {
-    ri <- r[[i]]
-    st <- stats_raster(ri)
-    
-    data.frame(
-      arquivo   = basename(f),   # nome EXATO do raster
-      caminho   = f,
-      banda     = i,
-      n_valid   = st$n_valid,
-      media     = st$mean,
-      mediana   = st$median,
-      desvio    = st$sd,
-      variancia = st$var,
-      minimo    = st$min,
-      maximo    = st$max,
-      q05       = st$q05,
-      q25       = st$q25,
-      q50       = st$q50,
-      q75       = st$q75,
-      q95       = st$q95,
-      stringsAsFactors = FALSE
-    )
-  })
-  
-  dplyr::bind_rows(out)
-}) %>%
-  dplyr::bind_rows() %>%
-  dplyr::arrange(arquivo, banda)
-
-readr::write_csv2(df, saida_csv2)
-
-message("OK! CSV2 gerado em: ", saida_csv2)
-print(df)
-
-
-#################################################################################
-
-# ============================================================
-# Estabilidade entre escalas (N) para mapas interpolados
-# Referência operacional: N = 40 (por parâmetro e data)
-# Saídas: CSV2 + gráficos
-# ============================================================
-
-suppressPackageStartupMessages({
-  library(terra)
-  library(dplyr)
-  library(stringr)
-  library(readr)
-  library(ggplot2)
-})
-
-# -------- CONFIGURE AQUI --------
-dir_rasters <- getwd()
-out_csv2    <- file.path(dir_rasters, "estabilidade_convergencia.csv")
-out_dir_fig <- file.path(dir_rasters, "figs_estabilidade")
-dir.create(out_dir_fig, showWarnings = FALSE)
-# --------------------------------
-
-# 1) listar rasters
-files <- list.files(dir_rasters, pattern = "\\.(tif|tiff|grd)$",
-                    full.names = TRUE, ignore.case = TRUE)
-if (length(files) == 0) stop("Nenhum raster (.tif/.tiff/.grd) encontrado.")
-
-# 2) parse do nome: parametro (0/d/df), data (8 dígitos), N (20/25/30/35/40 ou 15 default)
-parse_name <- function(path) {
-  nm <- tools::file_path_sans_ext(basename(path))
-  
-  pref <- str_match(nm, "^(df|d|0)_")[,2]
-  parametro <- dplyr::case_when(
-    pref == "0"  ~ "alpha_0",
-    pref == "d"  ~ "d_alpha",
-    pref == "df" ~ "df_alpha",
-    TRUE ~ NA_character_
-  )
-  
-  data_str <- str_match(nm, "(\\d{8})")[,2]  # primeira ocorrência YYYYMMDD
-  
-  n_str <- str_match(nm, "_(20|25|30|35|40)$")[,2]
-  N <- ifelse(is.na(n_str), 15L, as.integer(n_str))
-  
-  tibble(
-    arquivo = basename(path),
-    caminho = path,
-    parametro = parametro,
-    data = data_str,
-    N = N
-  )
-}
-
-meta <- bind_rows(lapply(files, parse_name)) %>%
-  filter(!is.na(parametro)) %>%
-  filter(N %in% c(15, 20, 25, 30, 35, 40))
-
-if (nrow(meta) == 0) stop("Nenhum arquivo bateu com o padrão 0_/d_/df_ e N em {15,20,25,30,35,40}.")
-
-# 3) alinhar rasters ao grid da referência
-align_to_ref <- function(x, ref) {
-  if (!terra::compareGeom(x, ref, stopOnError = FALSE)) {
-    x <- terra::resample(x, ref, method = "bilinear")
-  }
-  x
-}
-
-# 4) métricas entre mapas (x vs ref)
-map_metrics <- function(x, ref) {
-  v_ref <- terra::values(ref, mat = FALSE)
-  v_x   <- terra::values(x,   mat = FALSE)
-  
-  ok <- is.finite(v_ref) & is.finite(v_x)
-  if (!any(ok)) {
-    return(tibble(
-      n_valid = 0,
-      cor_pearson = NA_real_,
-      cor_spearman = NA_real_,
-      mae = NA_real_,
-      rmse = NA_real_,
-      dq05 = NA_real_,
-      dq50 = NA_real_,
-      dq95 = NA_real_
-    ))
-  }
-  
-  a <- v_x[ok]
-  b <- v_ref[ok]
-  d <- a - b
-  
-  qx   <- as.numeric(quantile(a, probs = c(0.05, 0.50, 0.95), names = FALSE, na.rm = TRUE))
-  qref <- as.numeric(quantile(b, probs = c(0.05, 0.50, 0.95), names = FALSE, na.rm = TRUE))
-  
-  tibble(
-    n_valid = length(a),
-    cor_pearson  = suppressWarnings(cor(a, b, method = "pearson")),
-    cor_spearman = suppressWarnings(cor(a, b, method = "spearman")),
-    mae  = mean(abs(d)),
-    rmse = sqrt(mean(d^2)),
-    dq05 = qx[1] - qref[1],
-    dq50 = qx[2] - qref[2],
-    dq95 = qx[3] - qref[3]
-  )
-}
-
-# 5) processar por grupos (parametro, data) sem group_modify()
-meta$grupo <- paste(meta$parametro, meta$data, sep = "||")
-grupos <- split(meta, meta$grupo)
-
-res_list <- lapply(grupos, function(g) {
-  g_ref <- g[g$N == 40, , drop = FALSE]
-  if (nrow(g_ref) == 0) return(NULL)
-  
-  ref <- terra::rast(g_ref$caminho[1])
-  if (terra::nlyr(ref) > 1) ref <- ref[[1]]
-  
-  out <- lapply(seq_len(nrow(g)), function(i) {
-    row <- g[i, ]
-    
-    x <- terra::rast(row$caminho)
-    if (terra::nlyr(x) > 1) x <- x[[1]]
-    x <- align_to_ref(x, ref)
-    
-    m <- map_metrics(x, ref)
-    
-    tibble(
-      arquivo     = row$arquivo,
-      caminho     = row$caminho,
-      parametro   = row$parametro,
-      data        = row$data,
-      N           = row$N,
-      ref_arquivo = g_ref$arquivo[1]
-    ) %>% bind_cols(m)
-  })
-  
-  bind_rows(out)
-})
-
-res <- bind_rows(res_list) %>%
-  arrange(parametro, data, N)
-
-if (nrow(res) == 0) stop("Nenhum grupo tinha N=40 como referência. Verifique seus arquivos _40.")
-
-# 6) salvar CSV2
-readr::write_csv2(res, out_csv2)
-message("OK! CSV2 salvo em: ", out_csv2)
-
-# 7) gráficos (métrica vs N), excluindo N=40 (é a referência)
-plot_metric <- function(df, y, ylab, fname) {
-  p <- ggplot(df %>% filter(N != 40), aes(x = N, y = .data[[y]])) +
-    geom_line() +
-    geom_point() +
-    facet_grid(data ~ parametro, scales = "free_y") +
-    labs(x = "N (partições por eixo)", y = ylab) +
-    theme_bw()
-  ggsave(file.path(out_dir_fig, fname), p, width = 10, height = 6, dpi = 200)
-}
-
-plot_metric(res, "cor_pearson",  "Correlação (Pearson) vs ref N=40",  "cor_pearson_vsN.png")
-plot_metric(res, "cor_spearman", "Correlação (Spearman) vs ref N=40", "cor_spearman_vsN.png")
-plot_metric(res, "rmse",         "RMSE (distância entre mapas) vs ref N=40", "rmse_vsN.png")
-plot_metric(res, "mae",          "MAE (distância entre mapas) vs ref N=40",  "mae_vsN.png")
-plot_metric(res, "dq50",         "Δmediana (q50) vs ref N=40", "dq50_vsN.png")
-plot_metric(res, "dq05",         "Δq05 vs ref N=40",           "dq05_vsN.png")
-plot_metric(res, "dq95",         "Δq95 vs ref N=40",           "dq95_vsN.png")
-
-message("OK! Figuras salvas em: ", out_dir_fig)
