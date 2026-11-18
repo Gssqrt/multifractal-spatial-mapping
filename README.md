@@ -109,11 +109,12 @@ Schneider, C. A., Rasband, W. S., & Eliceiri, K. W. (2012). NIH Image to ImageJ:
 
 Yamamoto, J. K., & Landim, P. M. B. (2005). *Geoestatística: Conceitos e aplicações*. Editora Unesp.
 
-### Related research article
+## Associated Scientific Publication
 
-Gustavo-Silva, F., et al. *Application of multifractal analysis to segmented orbital products of Sargassum spp.* Manuscript.
+This repository accompanies the methodological framework presented in:
 
-The repository accompanies the methodological framework developed in the associated research article. The final bibliographic reference and DOI will be added following publication.
-## Citation and licensing
+**Gustavo-Silva, F., et al. (2026).** *Application of multifractal analysis to segmented orbital products of Sargassum spp.* Remote Sensing Applications: Society and Environment.
 
-The pipeline is distinct from FracLac; the FracLac Java implementation is **not included**. Cite the original FracLac authors/plugin and the paper describing your work. `CITATION.cff` is intentionally a placeholder; authors, DOI, year and license still need approval. No open-source license is granted by this development snapshot.
+**DOI:** https://doi.org/10.1016/j.rsase.2026.102344
+
+The study investigates the morphological complexity and spatial organization of pelagic *Sargassum* aggregations using multifractal analysis of segmented satellite imagery. The computational workflow presented here supports the spatial attribution of multifractal descriptors and the construction of geostatistically interpolated morphological matrices.
